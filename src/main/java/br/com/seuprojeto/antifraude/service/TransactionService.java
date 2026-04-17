@@ -4,11 +4,14 @@ import br.com.seuprojeto.antifraude.dto.TransactionEvent;
 import br.com.seuprojeto.antifraude.dto.TransactionRequest;
 import br.com.seuprojeto.antifraude.dto.TransactionResponse;
 import br.com.seuprojeto.antifraude.event.producer.TransactionProducer;
+import br.com.seuprojeto.antifraude.exception.TransactionNotFoundException;
 import br.com.seuprojeto.antifraude.model.Transaction;
 import br.com.seuprojeto.antifraude.model.TransactionStatus;
 import br.com.seuprojeto.antifraude.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -22,7 +25,6 @@ public class TransactionService {
     private final TransactionProducer transactionProducer;
 
     public TransactionResponse receiveTransaction(TransactionRequest request) {
-
         Transaction transaction = new Transaction();
         transaction.setUserId(request.userId());
         transaction.setAmount(request.amount());
@@ -32,10 +34,8 @@ public class TransactionService {
         transaction.setStatus(TransactionStatus.PENDING_ANALYSIS);
 
         Transaction saved = transactionRepository.save(transaction);
-
         log.info("Transação salva. ID: {}, enviando ao Kafka...", saved.getId());
 
-        // Monta e envia o evento
         TransactionEvent event = new TransactionEvent(
                 saved.getId(),
                 saved.getUserId(),
@@ -46,6 +46,18 @@ public class TransactionService {
         transactionProducer.sendTransaction(event);
 
         return toResponse(saved);
+    }
+
+    public TransactionResponse findById(Long id) {
+        return transactionRepository.findById(id)
+                .map(this::toResponse)
+                .orElseThrow(() -> new TransactionNotFoundException(id));
+    }
+
+    public Page<TransactionResponse> findAll(String userId, TransactionStatus status, Pageable pageable) {
+        return transactionRepository
+                .findByFilters(userId, status, pageable)
+                .map(this::toResponse);
     }
 
     private TransactionResponse toResponse(Transaction t) {

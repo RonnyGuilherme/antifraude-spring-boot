@@ -1,5 +1,6 @@
 package br.com.seuprojeto.antifraude.config;
 
+import br.com.seuprojeto.antifraude.exception.TransactionNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -14,9 +15,8 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY) // 422
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
     public Map<String, Object> handleValidationErrors(MethodArgumentNotValidException ex) {
-
         Map<String, String> fieldErrors = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
@@ -24,11 +24,19 @@ public class GlobalExceptionHandler {
                         FieldError::getField,
                         FieldError::getDefaultMessage
                 ));
-
         return Map.of(
                 "status", 422,
                 "error", "Dados inválidos",
                 "fields", fieldErrors
+        );
+    }
+
+    @ExceptionHandler(TransactionNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Map<String, Object> handleNotFound(TransactionNotFoundException ex) {
+        return Map.of(
+                "status", 404,
+                "error", ex.getMessage()
         );
     }
 }
