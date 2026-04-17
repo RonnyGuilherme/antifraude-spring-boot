@@ -46,3 +46,19 @@ http://localhost:8080/swagger-ui/index.html
 ```bash
 ./mvnw test
 ```
+
+## 🔍 Consultar transações via API
+- Consultar o status de uma transação específica
+```bash
+curl http://localhost:8080/transactions/1
+```
+
+- Listar todas as transações (paginado)
+```bash
+curl curl "http://localhost:8080/transactions?page=0&size=10"
+```
+- Filtrar transações negadas de um usuário
+
+```bash
+curl "http://localhost:8080/transactions?userId=user-123&status=DENIED"
+```
