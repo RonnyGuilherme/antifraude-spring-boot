@@ -18,18 +18,10 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: 'maven'          # cacheia dependências entre execuções
+          cache: 'maven'
 
       - name: Grant execute permission for mvnw
         run: chmod +x ./mvnw
 
-      - name: Build sem testes
-        run: ./mvnw package -DskipTests
-
-      - name: Testes unitários
-        run: ./mvnw test -Dtest="HighAmountRuleTest,SuspiciousLocationRuleTest,FrequencyRuleTest"
-
-      - name: Testes de integração
-        run: ./mvnw test -Dtest="TransactionFlowIntegrationTest"
-        env:
-          SPRING_KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+      - name: Build e testes
+        run: ./mvnw verify
