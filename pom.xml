@@ -14,11 +14,11 @@
 		<version>3.5.13</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>br.com.seuprojeto</groupId>
+	<groupId>br.com.ronnyguilherme</groupId>
 	<artifactId>antifraude</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
+	<name>antifraude</name>
+	<description>Sistema de análise antifraude com Spring Boot e Kafka</description>
 	<url/>
 	<licenses>
 		<license/>
