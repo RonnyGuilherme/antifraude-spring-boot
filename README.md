@@ -10,7 +10,38 @@ API REST para análise assíncrona de fraudes em transações financeiras, usand
 - JUnit 5 + Mockito + Awaitility (testes integrados)
 
 ## 🧩 Arquitetura
-POST /transactions → API (202 Accepted) → Kafka → Consumer → Regras de Fraude → Banco
+POST /transactions
+│
+▼
+API (202 Accepted)         ← responde imediatamente, sem bloquear
+│
+▼
+Apache Kafka               ← desacopla a análise da entrada
+│
+▼
+FraudAnalysisService       ← itera sobre as regras via Strategy
+│
+┌────┴────┐
+│ Rules   │  HighAmountRule · SuspiciousLocationRule · FrequencyRule
+└────┬────┘
+│
+▼
+Banco de dados (H2)        ← status atualizado para APPROVED ou DENIED
+│
+▼
+WebSocket /topic/transactions/{id}  ← cliente notificado em tempo real
+
+## 🔍 Endpoints
+
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| POST | `/transactions` | Submete transação para análise (retorna 202) |
+| GET | `/transactions/{id}` | Consulta status de uma transação |
+| GET | `/transactions` | Histórico paginado com filtros por `userId` e `status` |
+| WS | `/ws` → `/topic/transactions/{id}` | Notificação em tempo real do resultado |
+
+Documentação interativa: `http://localhost:8080/swagger-ui/index.html`
+
 
 ## Características
 - Processamento assíncrono (API nunca bloqueia)
@@ -62,3 +93,6 @@ curl curl "http://localhost:8080/transactions?page=0&size=10"
 ```bash
 curl "http://localhost:8080/transactions?userId=user-123&status=DENIED"
 ```
+![Java](https://img.shields.io/badge/Java-21-blue)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.x-green)
+
