@@ -1,3 +1,7 @@
+![CI](https://github.com/RonnyGuilherme/antifraude-spring-boot/actions/workflows/ci.yml/badge.svg)
+![Java](https://img.shields.io/badge/Java-21-blue)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.x-green)
+
 # 🛡️ Sistema Antifraude — Spring Boot
 
 API REST para análise assíncrona de fraudes em transações financeiras, usando arquitetura orientada a eventos e processamento desacoplado via Kafka.
@@ -93,6 +97,5 @@ curl "http://localhost:8080/transactions?page=0&size=10"
 ```bash
 curl "http://localhost:8080/transactions?userId=user-123&status=DENIED"
 ```
-![Java](https://img.shields.io/badge/Java-21-blue)
-![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.x-green)
+
 
