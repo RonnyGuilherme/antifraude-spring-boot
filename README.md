@@ -86,7 +86,7 @@ curl http://localhost:8080/transactions/1
 
 - Listar todas as transações (paginado)
 ```bash
-curl curl "http://localhost:8080/transactions?page=0&size=10"
+curl "http://localhost:8080/transactions?page=0&size=10"
 ```
 - Filtrar transações negadas de um usuário
 
