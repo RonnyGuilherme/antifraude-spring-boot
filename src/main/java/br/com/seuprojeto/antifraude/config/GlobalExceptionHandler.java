@@ -2,12 +2,14 @@ package br.com.seuprojeto.antifraude.config;
 
 import br.com.seuprojeto.antifraude.exception.TransactionNotFoundException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.net.URI;
+import java.time.Instant;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -15,8 +17,7 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
-    public Map<String, Object> handleValidationErrors(MethodArgumentNotValidException ex) {
+    public ProblemDetail handleValidationErrors(MethodArgumentNotValidException ex) {
         Map<String, String> fieldErrors = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
@@ -24,19 +25,42 @@ public class GlobalExceptionHandler {
                         FieldError::getField,
                         FieldError::getDefaultMessage
                 ));
-        return Map.of(
-                "status", 422,
-                "error", "Dados inválidos",
-                "fields", fieldErrors
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNPROCESSABLE_ENTITY,
+                "Um ou mais campos estão inválidos."
         );
+        problem.setTitle("Dados inválidos");
+        problem.setType(URI.create("https://api.antifraude.com/errors/validation"));
+        problem.setProperty("timestamp", Instant.now());
+        problem.setProperty("fields", fieldErrors);
+
+        return problem;
     }
 
     @ExceptionHandler(TransactionNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Map<String, Object> handleNotFound(TransactionNotFoundException ex) {
-        return Map.of(
-                "status", 404,
-                "error", ex.getMessage()
+    public ProblemDetail handleNotFound(TransactionNotFoundException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND,
+                ex.getMessage()
         );
+        problem.setTitle("Recurso não encontrado");
+        problem.setType(URI.create("https://api.antifraude.com/errors/not-found"));
+        problem.setProperty("timestamp", Instant.now());
+
+        return problem;
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ProblemDetail handleGeneric(Exception ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Ocorreu um erro inesperado. Tente novamente."
+        );
+        problem.setTitle("Erro interno");
+        problem.setType(URI.create("https://api.antifraude.com/errors/internal"));
+        problem.setProperty("timestamp", Instant.now());
+
+        return problem;
     }
 }
