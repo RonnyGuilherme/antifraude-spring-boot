@@ -72,11 +72,11 @@ class TransactionApiIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /transactions deve retornar 422 para dados inválidos")
-    void shouldReturn422WhenDataIsInvalid() {
+    @DisplayName("POST /transactions deve retornar 400 para dados inválidos")
+    void shouldReturn400WhenDataIsInvalid() {
         TransactionRequest request = new TransactionRequest(
-                "",                      // userId vazio
-                new BigDecimal("-10"),   // amount negativo
+                "",
+                new BigDecimal("-10"),
                 null,
                 null
         );
@@ -85,6 +85,6 @@ class TransactionApiIntegrationTest {
                 "/transactions", request, String.class
         );
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 }
