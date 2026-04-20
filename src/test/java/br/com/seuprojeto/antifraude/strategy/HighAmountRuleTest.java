@@ -3,7 +3,8 @@ package br.com.seuprojeto.antifraude.strategy;
 import br.com.seuprojeto.antifraude.dto.TransactionEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.math.BigDecimal;
 
@@ -18,32 +19,25 @@ class HighAmountRuleTest {
         rule = new HighAmountRule();
     }
 
-    private TransactionEvent buildEvent(BigDecimal amount) {
-        return new TransactionEvent(1L, "user-123", amount, "São Paulo, BR", "177.0.0.1");
-    }
+    @ParameterizedTest(name = "valor={0} → fraude={1}")
+    @CsvSource({
+            "9999.99,  false",  // abaixo do limite
+            "10000.00, false",  // exatamente no limite (não excede)
+            "10000.01, true",   // um centavo acima
+            "50000.00, true",   // muito acima
+            "0.01,     false",  // valor mínimo
+    })
+    @DisplayName("Deve avaliar corretamente o limite de valor")
+    void shouldEvaluateAmountLimit(BigDecimal amount, boolean expectedFraud) {
+        TransactionEvent event = new TransactionEvent(
+                1L, "user-test", amount, "São Paulo, BR", "177.0.0.1"
+        );
 
-    @Test
-    @DisplayName("Deve aprovar transação com valor dentro do limite")
-    void shouldApproveWhenAmountIsWithinLimit() {
-        RuleResult result = rule.evaluate(buildEvent(new BigDecimal("9999.99")));
+        RuleResult result = rule.evaluate(event);
 
-        assertThat(result.fraudDetected()).isFalse();
-    }
-
-    @Test
-    @DisplayName("Deve negar transação com valor acima do limite")
-    void shouldDenyWhenAmountExceedsLimit() {
-        RuleResult result = rule.evaluate(buildEvent(new BigDecimal("10000.01")));
-
-        assertThat(result.fraudDetected()).isTrue();
-        assertThat(result.reason()).contains("excede o limite");
-    }
-
-    @Test
-    @DisplayName("Deve aprovar transação com valor exatamente no limite")
-    void shouldApproveWhenAmountIsExactlyAtLimit() {
-        RuleResult result = rule.evaluate(buildEvent(new BigDecimal("10000.00")));
-
-        assertThat(result.fraudDetected()).isFalse();
+        assertThat(result.fraudDetected()).isEqualTo(expectedFraud);
+        if (expectedFraud) {
+            assertThat(result.reason()).contains("excede o limite");
+        }
     }
 }

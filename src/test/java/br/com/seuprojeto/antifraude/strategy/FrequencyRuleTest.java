@@ -4,7 +4,8 @@ import br.com.seuprojeto.antifraude.dto.TransactionEvent;
 import br.com.seuprojeto.antifraude.repository.TransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -22,40 +23,40 @@ import static org.mockito.Mockito.when;
 class FrequencyRuleTest {
 
     @Mock
-    private TransactionRepository transactionRepository;  // Mockito cria um "fake" do repositório
+    private TransactionRepository transactionRepository;
 
     @InjectMocks
-    private FrequencyRule rule;  // Mockito injeta o fake no construtor
+    private FrequencyRule rule;
 
     private TransactionEvent event;
 
     @BeforeEach
     void setUp() {
-        event = new TransactionEvent(1L, "user-123", new BigDecimal("300.00"), "SP, BR", "1.2.3.4");
+        event = new TransactionEvent(
+                1L, "user-123", new BigDecimal("300.00"), "SP, BR", "1.2.3.4"
+        );
     }
 
-    @Test
-    @DisplayName("Deve aprovar quando usuário tem poucas transações recentes")
-    void shouldApproveWhenFewRecentTransactions() {
-        // Simula o banco retornando 3 transações (abaixo do limite de 5)
-        when(transactionRepository.countRecentTransactions(eq("user-123"), any(LocalDateTime.class)))
-                .thenReturn(3L);
+    @ParameterizedTest(name = "contagem={0} → fraude={1}")
+    @CsvSource({
+            "0, false",   // nenhuma transação anterior
+            "3, false",   // abaixo do limite
+            "5, false",   // exatamente no limite (não excede)
+            "6, true",    // um acima do limite
+            "10, true",   // muito acima
+            "100, true",  // caso extremo
+    })
+    @DisplayName("Deve avaliar corretamente a frequência de transações")
+    void shouldEvaluateTransactionFrequency(long count, boolean expectedFraud) {
+        when(transactionRepository.countRecentTransactions(
+                eq("user-123"), any(LocalDateTime.class))
+        ).thenReturn(count);
 
         RuleResult result = rule.evaluate(event);
 
-        assertThat(result.fraudDetected()).isFalse();
-    }
-
-    @Test
-    @DisplayName("Deve negar quando usuário excede o limite de transações")
-    void shouldDenyWhenTooManyRecentTransactions() {
-        // Simula o banco retornando 6 transações (acima do limite de 5)
-        when(transactionRepository.countRecentTransactions(eq("user-123"), any(LocalDateTime.class)))
-                .thenReturn(6L);
-
-        RuleResult result = rule.evaluate(event);
-
-        assertThat(result.fraudDetected()).isTrue();
-        assertThat(result.reason()).contains("user-123");
+        assertThat(result.fraudDetected()).isEqualTo(expectedFraud);
+        if (expectedFraud) {
+            assertThat(result.reason()).contains("user-123");
+        }
     }
 }
